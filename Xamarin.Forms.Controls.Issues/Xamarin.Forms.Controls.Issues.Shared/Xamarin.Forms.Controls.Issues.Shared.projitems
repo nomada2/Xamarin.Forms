@@ -156,6 +156,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Bugzilla39853.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TestPages\ScreenshotConditionalApp.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Bugzilla41842.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Bugzilla42277.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)_Template.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Issue1028.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Issue1075.cs" />
@@ -407,6 +408,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Bugzilla40704.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Bugzilla41038.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Bugzilla38284.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Bugzilla39486.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)Bugzilla22229.xaml">
