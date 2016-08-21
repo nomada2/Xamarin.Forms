@@ -197,6 +197,10 @@
       <Project>{57B8B73D-C3B5-4C42-869E-7B2F17D354AC}</Project>
       <Name>Xamarin.Forms.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\MondayPundayApp\MondayPundayApp\MondayPundayApp.csproj">
+      <Project>{BC4CB2C5-A709-4819-AF9B-EA849657E364}</Project>
+      <Name>MondayPundayApp</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\Xamarin.Forms.Core\Properties\GlobalAssemblyInfo.cs">

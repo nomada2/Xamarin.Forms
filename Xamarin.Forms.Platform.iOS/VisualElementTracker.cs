@@ -5,6 +5,7 @@ using System.Threading;
 #if __UNIFIED__
 using UIKit;
 using CoreAnimation;
+using MondayPundayApp;
 
 #else
 using MonoTouch.UIKit;
@@ -105,120 +106,127 @@ namespace Xamarin.Forms.Platform.iOS
 
 		void OnUpdateNativeControl(CALayer caLayer)
 		{
-			Device.BeginInvokeOnMainThread(() =>
+			try
 			{
-				var view = Renderer.Element;
-				var uiview = Renderer.NativeView;
-
-				if (view == null || view.Batched)
-					return;
-
-				var shouldInteract = !view.InputTransparent && view.IsEnabled;
-				if (_isInteractive != shouldInteract)
+				Device.BeginInvokeOnMainThread(() =>
 				{
-					uiview.UserInteractionEnabled = shouldInteract;
-					_isInteractive = shouldInteract;
-				}
+					var view = Renderer.Element;
+					var uiview = Renderer.NativeView;
 
-				var boundsChanged = _lastBounds != view.Bounds;
-
-				var thread = !boundsChanged && !caLayer.Frame.IsEmpty;
-
-				var anchorX = (float)view.AnchorX;
-				var anchorY = (float)view.AnchorY;
-				var translationX = (float)view.TranslationX;
-				var translationY = (float)view.TranslationY;
-				var rotationX = (float)view.RotationX;
-				var rotationY = (float)view.RotationY;
-				var rotation = (float)view.Rotation;
-				var scale = (float)view.Scale;
-				var width = (float)view.Width;
-				var height = (float)view.Height;
-				var x = (float)view.X;
-				var y = (float)view.Y;
-				var opacity = (float)view.Opacity;
-				var isVisible = view.IsVisible;
-
-				var updateTarget = Interlocked.Increment(ref _updateCount);
-
-				Action update = () =>
-				{
-					if (updateTarget != _updateCount)
+					if (view == null || view.Batched)
 						return;
 
-					var visualElement = view;
-					var parent = view.RealParent;
-
-					var shouldRelayoutSublayers = false;
-					if (isVisible && caLayer.Hidden)
+					var shouldInteract = !view.InputTransparent && view.IsEnabled;
+					if (_isInteractive != shouldInteract)
 					{
-						caLayer.Hidden = false;
-						if (!caLayer.Frame.IsEmpty)
+						uiview.UserInteractionEnabled = shouldInteract;
+						_isInteractive = shouldInteract;
+					}
+
+					var boundsChanged = _lastBounds != view.Bounds;
+
+					var thread = !boundsChanged && !caLayer.Frame.IsEmpty;
+
+					var anchorX = (float)view.AnchorX;
+					var anchorY = (float)view.AnchorY;
+					var translationX = (float)view.TranslationX;
+					var translationY = (float)view.TranslationY;
+					var rotationX = (float)view.RotationX;
+					var rotationY = (float)view.RotationY;
+					var rotation = (float)view.Rotation;
+					var scale = (float)view.Scale;
+					var width = (float)view.Width;
+					var height = (float)view.Height;
+					var x = (float)view.X;
+					var y = (float)view.Y;
+					var opacity = (float)view.Opacity;
+					var isVisible = view.IsVisible;
+
+					var updateTarget = Interlocked.Increment(ref _updateCount);
+
+					Action update = () =>
+					{
+						if (updateTarget != _updateCount)
+							return;
+
+						var visualElement = view;
+						var parent = view.RealParent;
+
+						var shouldRelayoutSublayers = false;
+						if (isVisible && caLayer.Hidden)
+						{
+							caLayer.Hidden = false;
+							if (!caLayer.Frame.IsEmpty)
+								shouldRelayoutSublayers = true;
+						}
+
+						if (!isVisible && !caLayer.Hidden)
+						{
+							caLayer.Hidden = true;
 							shouldRelayoutSublayers = true;
-					}
+						}
 
-					if (!isVisible && !caLayer.Hidden)
-					{
-						caLayer.Hidden = true;
-						shouldRelayoutSublayers = true;
-					}
+					// ripe for optimization
+					var transform = CATransform3D.Identity;
 
-				// ripe for optimization
-				var transform = CATransform3D.Identity;
+					// Dont ever attempt to actually change the layout of a Page unless it is a ContentPage
+					// iOS is a really big fan of you not actually modifying the View's of the UIViewControllers
+					if ((!(visualElement is Page) || visualElement is ContentPage) && width > 0 && height > 0 && parent != null && boundsChanged)
+						{
+							var target = new RectangleF(x, y, width, height);
+						// must reset transform prior to setting frame...
+						caLayer.Transform = transform;
+							uiview.Frame = target;
+							if (shouldRelayoutSublayers)
+								caLayer.LayoutSublayers();
+						}
+						else if (width <= 0 || height <= 0)
+						{
+							caLayer.Hidden = true;
+							return;
+						}
 
-				// Dont ever attempt to actually change the layout of a Page unless it is a ContentPage
-				// iOS is a really big fan of you not actually modifying the View's of the UIViewControllers
-				if ((!(visualElement is Page) || visualElement is ContentPage) && width > 0 && height > 0 && parent != null && boundsChanged)
-					{
-						var target = new RectangleF(x, y, width, height);
-					// must reset transform prior to setting frame...
-					caLayer.Transform = transform;
-						uiview.Frame = target;
-						if (shouldRelayoutSublayers)
-							caLayer.LayoutSublayers();
-					}
-					else if (width <= 0 || height <= 0)
-					{
-						caLayer.Hidden = true;
-						return;
-					}
+						caLayer.AnchorPoint = new PointF(anchorX, anchorY);
+						caLayer.Opacity = opacity;
+						const double epsilon = 0.001;
 
-					caLayer.AnchorPoint = new PointF(anchorX, anchorY);
-					caLayer.Opacity = opacity;
-					const double epsilon = 0.001;
+					// position is relative to anchor point
+					if (Math.Abs(anchorX - .5) > epsilon)
+							transform = transform.Translate((anchorX - .5f) * width, 0, 0);
+						if (Math.Abs(anchorY - .5) > epsilon)
+							transform = transform.Translate(0, (anchorY - .5f) * height, 0);
 
-				// position is relative to anchor point
-				if (Math.Abs(anchorX - .5) > epsilon)
-						transform = transform.Translate((anchorX - .5f) * width, 0, 0);
-					if (Math.Abs(anchorY - .5) > epsilon)
-						transform = transform.Translate(0, (anchorY - .5f) * height, 0);
+						if (Math.Abs(translationX) > epsilon || Math.Abs(translationY) > epsilon)
+							transform = transform.Translate(translationX, translationY, 0);
 
-					if (Math.Abs(translationX) > epsilon || Math.Abs(translationY) > epsilon)
-						transform = transform.Translate(translationX, translationY, 0);
+						if (Math.Abs(scale - 1) > epsilon)
+							transform = transform.Scale(scale);
 
-					if (Math.Abs(scale - 1) > epsilon)
-						transform = transform.Scale(scale);
+					// not just an optimization, iOS will not "pixel align" a view which has m34 set
+					if (Math.Abs(rotationY % 180) > epsilon || Math.Abs(rotationX % 180) > epsilon)
+							transform.m34 = 1.0f / -400f;
 
-				// not just an optimization, iOS will not "pixel align" a view which has m34 set
-				if (Math.Abs(rotationY % 180) > epsilon || Math.Abs(rotationX % 180) > epsilon)
-						transform.m34 = 1.0f / -400f;
+						if (Math.Abs(rotationX % 360) > epsilon)
+							transform = transform.Rotate(rotationX * (float)Math.PI / 180.0f, 1.0f, 0.0f, 0.0f);
+						if (Math.Abs(rotationY % 360) > epsilon)
+							transform = transform.Rotate(rotationY * (float)Math.PI / 180.0f, 0.0f, 1.0f, 0.0f);
 
-					if (Math.Abs(rotationX % 360) > epsilon)
-						transform = transform.Rotate(rotationX * (float)Math.PI / 180.0f, 1.0f, 0.0f, 0.0f);
-					if (Math.Abs(rotationY % 360) > epsilon)
-						transform = transform.Rotate(rotationY * (float)Math.PI / 180.0f, 0.0f, 1.0f, 0.0f);
+						transform = transform.Rotate(rotation * (float)Math.PI / 180.0f, 0.0f, 0.0f, 1.0f);
+						caLayer.Transform = transform;
+					};
 
-					transform = transform.Rotate(rotation * (float)Math.PI / 180.0f, 0.0f, 0.0f, 1.0f);
-					caLayer.Transform = transform;
-				};
+					if (thread)
+						CADisplayLinkTicker.Default.Invoke(update);
+					else
+						update();
 
-				if (thread)
-					CADisplayLinkTicker.Default.Invoke(update);
-				else
-					update();
-
-				_lastBounds = view.Bounds;
-			});
+					_lastBounds = view.Bounds;
+				});
+			}
+			catch(Exception e)
+			{
+				InsightsHelpers.Report(e);
+			}
 		}
 
 		void SetElement(VisualElement oldElement, VisualElement newElement)
