@@ -1,16 +1,9 @@
 using System;
-using System.Drawing;
 using System.ComponentModel;
+using System.Drawing;
 using System.Threading;
-#if __UNIFIED__
-using UIKit;
 using CoreAnimation;
 using MondayPundayApp;
-
-#else
-using MonoTouch.UIKit;
-using MonoTouch.CoreAnimation;
-#endif
 
 namespace Xamarin.Forms.Platform.iOS
 {
